@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "evalyn_icp_backend": {
+      "main": "src/evalyn_icp_backend/main.mo",
+      "type": "motoko"
+    },
+    "evalyn_icp_frontend": {
+      "dependencies": [
+        "evalyn_icp_backend"
+      ],
+      "source": [
+        "src/evalyn_icp_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "evalyn_icp_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
