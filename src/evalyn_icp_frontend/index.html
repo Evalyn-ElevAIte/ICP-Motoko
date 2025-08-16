@@ -66,13 +66,13 @@
         }
 
         .section h2::before {
-            content: "📹";
+            content: "🎹";
             margin-right: 10px;
             font-size: 1.2em;
         }
 
         .section:nth-child(2) h2::before {
-            content: "🔍";
+            content: "📊";
         }
 
         .file-upload {
@@ -235,7 +235,7 @@
                     <label for="videoFile">Select Video File (MP4, MOV, AVI)</label>
                     <input type="file" id="videoFile" class="file-input" accept="video/*">
                 </div>
-                <button onclick="uploadVideo()" class="btn" id="uploadBtn">
+                <button class="btn" id="uploadBtn">
                     Analyze Video
                 </button>
                 
@@ -254,7 +254,7 @@
                     <label for="videoId">Video ID</label>
                     <input type="text" id="videoId" placeholder="vid_1234567890...">
                 </div>
-                <button onclick="checkResults()" class="btn">
+                <button class="btn" id="checkResultsBtn">
                     Get Results
                 </button>
 
@@ -271,11 +271,49 @@
     <script type="module">
         import { createActor, evalyn_icp_backend } from "../declarations/evalyn_icp_backend/index.js";
 
-        // Initialize actor
-        const actor = evalyn_icp_backend;
+        // Initialize actor with error handling
+        let actor;
+        try {
+            actor = evalyn_icp_backend;
+            console.log("✅ Actor connected successfully:", actor);
+        } catch (error) {
+            console.error("❌ Failed to connect to actor:", error);
+            alert("Failed to connect to backend. Please check if canister is deployed.");
+        }
 
-        // Make functions globally available
-        window.uploadVideo = async function() {
+        // Setup event listeners
+        function setupEventListeners() {
+            console.log("🚀 Setting up event listeners...");
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            const checkBtn = document.getElementById('checkResultsBtn');
+            
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', uploadVideo);
+                console.log("✅ Upload button connected");
+            } else {
+                console.error("❌ Upload button not found!");
+            }
+            
+            if (checkBtn) {
+                checkBtn.addEventListener('click', checkResults);  
+                console.log("✅ Check results button connected");
+            } else {
+                console.error("❌ Check results button not found!");
+            }
+        }
+
+        // Run setup when DOM is ready OR immediately if already ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupEventListeners);
+        } else {
+            setupEventListeners();
+        }
+
+        // Upload video function
+        async function uploadVideo() {
+            console.log("🎬 Starting video upload process...");
+            
             const fileInput = document.getElementById('videoFile');
             const uploadBtn = document.getElementById('uploadBtn');
             const loading = document.getElementById('uploadLoading');
@@ -295,6 +333,8 @@
             }
 
             try {
+                console.log("📁 File selected:", file.name, "Size:", (file.size / 1024 / 1024).toFixed(2), "MB");
+                
                 uploadBtn.disabled = true;
                 loading.style.display = 'block';
                 result.style.display = 'none';
@@ -303,8 +343,12 @@
                 const arrayBuffer = await file.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
 
+                console.log("📡 Calling backend with video data size:", uint8Array.length, "bytes");
+                
                 // Call backend
                 const response = await actor.analyzeVideo(uint8Array);
+                
+                console.log("✅ Backend response:", response);
                 
                 loading.style.display = 'none';
                 uploadBtn.disabled = false;
@@ -324,13 +368,17 @@ Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
                 document.getElementById('videoId').value = response.videoId;
 
             } catch (error) {
+                console.error("❌ Upload error:", error);
                 loading.style.display = 'none';
                 uploadBtn.disabled = false;
                 showError('uploadResult', `Upload failed: ${error.message}`);
             }
-        };
+        }
 
-        window.checkResults = async function() {
+        // Check results function
+        async function checkResults() {
+            console.log("📊 Checking analysis results...");
+            
             const videoIdInput = document.getElementById('videoId');
             const loading = document.getElementById('resultLoading');
             const result = document.getElementById('analysisResult');
@@ -341,10 +389,14 @@ Size: ${(file.size / 1024 / 1024).toFixed(2)} MB
             }
 
             try {
+                console.log("🔍 Looking for video ID:", videoIdInput.value.trim());
+                
                 loading.style.display = 'block';
                 result.style.display = 'none';
 
                 const response = await actor.getAnalysisResult(videoIdInput.value.trim());
+                
+                console.log("📋 Analysis result:", response);
                 
                 loading.style.display = 'none';
 
@@ -392,10 +444,11 @@ ${aiData.summary}
                 result.style.display = 'block';
 
             } catch (error) {
+                console.error("❌ Results check error:", error);
                 loading.style.display = 'none';
                 showError('analysisResult', `Error checking results: ${error.message}`);
             }
-        };
+        }
 
         function showSuccess(elementId, message) {
             const element = document.getElementById(elementId);
@@ -408,6 +461,11 @@ ${aiData.summary}
             element.innerHTML = `<div class="error-message">${message}</div>`;
             element.style.display = 'block';
         }
+
+        // Make functions available globally for debugging
+        window.uploadVideo = uploadVideo;
+        window.checkResults = checkResults;
+        
     </script>
 </body>
 </html>
